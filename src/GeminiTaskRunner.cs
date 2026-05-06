@@ -13,13 +13,13 @@ internal sealed class GeminiTaskRunner
         this.settings = settings;
     }
 
-    public bool Run(ScheduledGeminiTask task)
+    public GeminiTaskRunResult Run(ScheduledGeminiTask task)
     {
         if (string.IsNullOrWhiteSpace(task.Prompt))
         {
             AppLog.Info($"Scheduled task \"{task.Name}\" skipped because prompt is empty.");
             task.LastResult = "Skipped: prompt is empty";
-            return false;
+            return GeminiTaskRunResult.Exception(TaskRunExceptionCodes.PromptEmpty, "Skipped: prompt is empty");
         }
 
         AppLog.Info($"Scheduled task \"{task.Name}\" starting. ScheduleKind={task.ScheduleKind}; Reasoning={task.ReasoningLevel}; ChromeProfile={settings.ChromeProfileDirectory}; CompletionAction={task.CompletionAction}.");
@@ -60,7 +60,7 @@ internal sealed class GeminiTaskRunner
                 AppLog.Info($"Scheduled task \"{task.Name}\" stopped before paste because the Chrome Gemini side panel prompt box was not focused. SidePanelOpened={sidePanelOpened}; ReasoningApplied={reasoningApplied}.");
                 sidePanel.TryCloseSidePanel();
                 chromeSession.Cleanup();
-                return false;
+                return GeminiTaskRunResult.Exception(TaskRunExceptionCodes.PromptBoxNotFound, "Failed: Gemini prompt box not found");
             }
 
             Clipboard.SetText(task.Prompt);
@@ -77,14 +77,21 @@ internal sealed class GeminiTaskRunner
             AppLog.Info($"Scheduled task \"{task.Name}\" completion monitor result. State={completion.State}; Reason=\"{completion.Reason}\".");
             sidePanel.TryCloseSidePanel();
             chromeSession.Cleanup();
-            return completion.State == GeminiTaskCompletionState.Completed;
+            string exceptionCode = TaskRunExceptionCodes.FromCompletionState(completion.State);
+
+            if (string.IsNullOrWhiteSpace(exceptionCode))
+            {
+                return GeminiTaskRunResult.Success(task.LastResult);
+            }
+
+            return GeminiTaskRunResult.Exception(exceptionCode, task.LastResult);
         }
         catch (Exception exception)
         {
             task.LastResult = "Failed: see diagnostic log";
             AppLog.Error($"Scheduled task \"{task.Name}\" failed while starting Chrome Gemini side panel prompt.", exception);
             chromeSession.Cleanup();
-            return false;
+            return GeminiTaskRunResult.Exception(TaskRunExceptionCodes.UnexpectedRunnerError, "Failed: see diagnostic log");
         }
     }
 

@@ -42,6 +42,7 @@ Right-click the tray icon to change settings:
 - `Create a Task`
 - `Enable/Disable Tasks`
 - `Configure Tasks`
+- `Task History`
 - `Chrome Profile [Experimental]`
 - `Settings`
 - `About`
@@ -81,6 +82,23 @@ Scheduled tasks are stored in:
 ```text
 %AppData%\Gemini for Chrome Task Manager\tasks.json
 ```
+
+Task run history is stored in:
+
+```text
+%AppData%\Gemini for Chrome Task Manager\task-history.json
+```
+
+The app keeps the most recent 100 history entries per task. History records include when the run started, when it ended, whether a definite exception was detected, and the exception code when one applies.
+
+Task exception codes:
+
+- `GCTM-001`: Task prompt was empty, so nothing could be sent to Gemini.
+- `GCTM-002`: Gemini side panel opened, but the prompt box could not be found or focused.
+- `GCTM-003`: Gemini displayed a definite error or retry state.
+- `GCTM-004`: Gemini displayed an interrupted, stopped, or cancelled state.
+- `GCTM-005`: Gemini did not return to idle before the configured completion timeout.
+- `GCTM-006`: The task runner hit an unexpected application exception.
 
 Scheduled task behavior:
 

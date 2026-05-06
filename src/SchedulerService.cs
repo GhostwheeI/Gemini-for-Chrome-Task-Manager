@@ -108,10 +108,24 @@ internal sealed class SchedulerService : IDisposable
         SetStatus($"Running scheduled task: {task.Name}");
         AppLog.Info($"Scheduler triggering task \"{task.Name}\". ManualRun={manualRun}; NextRunLocal={task.NextRunLocal:g}.");
 
-        bool started = runner.Run(task);
+        DateTime startedLocal = DateTime.Now;
+        GeminiTaskRunResult result = runner.Run(task);
+        DateTime endedLocal = DateTime.Now;
         task.AdvanceAfterRun(nowLocal);
+        task.LastResult = result.Result;
+        TaskRunHistoryStore.Append(new TaskRunHistoryEntry
+        {
+            TaskId = task.Id,
+            TaskName = task.Name,
+            StartedLocal = startedLocal,
+            EndedLocal = endedLocal,
+            HadException = result.HasException,
+            ExceptionCode = result.ExceptionCode,
+            Result = result.Result
+        });
+        AppLog.Info($"Task history recorded for \"{task.Name}\". Started={startedLocal:g}; Ended={endedLocal:g}; HadException={result.HasException}; ExceptionCode={result.ExceptionCode}.");
 
-        if (!started)
+        if (!result.Completed)
         {
             SetStatus(GetIdleStatus());
             return;

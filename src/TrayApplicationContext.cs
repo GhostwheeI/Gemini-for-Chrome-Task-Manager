@@ -69,6 +69,9 @@ internal sealed class TrayApplicationContext : ApplicationContext
         ToolStripMenuItem configureMenu = new("Configure Tasks");
         PopulateConfigureMenu(configureMenu);
 
+        ToolStripMenuItem historyMenu = new("Task History");
+        PopulateHistoryMenu(historyMenu);
+
         ToolStripMenuItem chromeProfileMenu = new("Chrome Profile [Experimental]");
         PopulateChromeProfileMenu(chromeProfileMenu);
 
@@ -87,6 +90,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         menu.Items.Add(createTaskItem);
         menu.Items.Add(enableDisableMenu);
         menu.Items.Add(configureMenu);
+        menu.Items.Add(historyMenu);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(chromeProfileMenu);
         menu.Items.Add(new ToolStripSeparator());
@@ -161,6 +165,22 @@ internal sealed class TrayApplicationContext : ApplicationContext
         {
             ToolStripMenuItem item = new(task.Name);
             item.Click += (_, _) => EditTask(task);
+            parent.DropDownItems.Add(item);
+        }
+    }
+
+    private void PopulateHistoryMenu(ToolStripMenuItem parent)
+    {
+        if (scheduler.Tasks.Count == 0)
+        {
+            parent.DropDownItems.Add(new ToolStripMenuItem("None") { Enabled = false });
+            return;
+        }
+
+        foreach (ScheduledGeminiTask task in scheduler.Tasks.OrderBy(task => task.Name))
+        {
+            ToolStripMenuItem item = new(task.Name);
+            item.Click += (_, _) => ShowTaskHistory(task);
             parent.DropDownItems.Add(item);
         }
     }
@@ -267,6 +287,12 @@ internal sealed class TrayApplicationContext : ApplicationContext
                 scheduler.RunNow(savedTask);
             }
         }
+    }
+
+    private static void ShowTaskHistory(ScheduledGeminiTask task)
+    {
+        TaskHistoryForm form = new(task);
+        form.Show();
     }
 
     private void ShowSettings()
