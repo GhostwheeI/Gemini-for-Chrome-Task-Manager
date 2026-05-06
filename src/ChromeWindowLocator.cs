@@ -59,9 +59,15 @@ internal static class ChromeWindowLocator
         return activated;
     }
 
-    private static IntPtr FindChromeWindow()
+    public static bool TryGetChromeWindowHandle(out IntPtr chromeWindow)
     {
-        IntPtr found = IntPtr.Zero;
+        chromeWindow = FindChromeWindow();
+        return chromeWindow != IntPtr.Zero;
+    }
+
+    public static IReadOnlyList<IntPtr> GetChromeWindowHandles()
+    {
+        List<IntPtr> handles = [];
 
         EnumWindows((hwnd, _) =>
         {
@@ -81,14 +87,18 @@ internal static class ChromeWindowLocator
 
             if (bounds.Width >= 400 && bounds.Height >= 300)
             {
-                found = hwnd;
-                return false;
+                handles.Add(hwnd);
             }
 
             return true;
         }, IntPtr.Zero);
 
-        return found;
+        return handles;
+    }
+
+    private static IntPtr FindChromeWindow()
+    {
+        return GetChromeWindowHandles().FirstOrDefault();
     }
 
     private static string GetWindowClassName(IntPtr hwnd)

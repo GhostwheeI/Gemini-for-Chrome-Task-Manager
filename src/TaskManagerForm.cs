@@ -37,6 +37,7 @@ internal sealed class TaskManagerForm : Form
         grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.ScheduleDescription), HeaderText = "Schedule", Width = 110 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.NextRunLocal), HeaderText = "Next run", Width = 150 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.RepeatDescription), HeaderText = "Repeat", Width = 110 });
+        grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.ReasoningDescription), HeaderText = "Reasoning", Width = 90 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.CompletionDescription), HeaderText = "When run", Width = 140 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.LastResult), HeaderText = "Last result", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
 

@@ -16,8 +16,9 @@ $AppName = 'Gemini for Chrome Task Manager'
 $LegacyAppName = 'Gemini for Chrome Manager'
 $AppId = 'GeminiForChromeTaskManager'
 $LegacyAppId = 'GeminiForChromeManager'
-$Version = '0.8.0'
+$Version = '0.9.0'
 $Publisher = 'Ghostwheel'
+$OfficialGeminiChromeHelpUrl = 'https://support.google.com/chrome/answer/16283624'
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectPath = Join-Path $ScriptRoot 'src\GeminiForChromeManager.csproj'
 $PublishPath = Join-Path $ScriptRoot 'dist\publish'
@@ -31,6 +32,177 @@ $UninstallKeyPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\G
 $LegacyUninstallKeyPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\GeminiForChromeManager'
 $DataPath = Join-Path $env:APPDATA 'Gemini for Chrome Task Manager'
 $LegacyDataPath = Join-Path $env:APPDATA 'Gemini for Chrome Manager'
+
+function Get-ChromeInstallInfo {
+    $paths = @(
+        (Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'),
+        (Join-Path ${env:ProgramFiles(x86)} 'Google\Chrome\Application\chrome.exe'),
+        (Join-Path $env:LOCALAPPDATA 'Google\Chrome\Application\chrome.exe')
+    )
+
+    foreach ($path in $paths) {
+        if (Test-Path -LiteralPath $path) {
+            $item = Get-Item -LiteralPath $path
+            return [pscustomobject]@{
+                Found = $true
+                Path = $path
+                Version = $item.VersionInfo.ProductVersion
+            }
+        }
+    }
+
+    return [pscustomobject]@{
+        Found = $false
+        Path = ''
+        Version = ''
+    }
+}
+
+function Test-GeminiInChromeSetup {
+    $chrome = Get-ChromeInstallInfo
+    $reasons = New-Object System.Collections.Generic.List[string]
+
+    if (-not $chrome.Found) {
+        $reasons.Add('Google Chrome was not found in the standard install locations.')
+    }
+
+    $localStatePath = Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data\Local State'
+    $profileIsEligible = $false
+
+    if (Test-Path -LiteralPath $localStatePath) {
+        try {
+            $localState = Get-Content -LiteralPath $localStatePath -Raw | ConvertFrom-Json
+            $profiles = $localState.profile.info_cache.PSObject.Properties
+
+            foreach ($profile in $profiles) {
+                if ($profile.Value.is_glic_eligible -eq $true) {
+                    $profileIsEligible = $true
+                    break
+                }
+            }
+        }
+        catch {
+            $reasons.Add('Chrome local state could not be read to confirm Gemini eligibility.')
+        }
+    }
+    else {
+        $reasons.Add('Chrome local state was not found, so Gemini in Chrome could not be confirmed.')
+    }
+
+    $preferencesRoot = Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data'
+    $hasGeminiSidePanelState = $false
+
+    if (Test-Path -LiteralPath $preferencesRoot) {
+        $preferenceFiles = @(Get-ChildItem -LiteralPath $preferencesRoot -Filter 'Preferences' -Recurse -File -ErrorAction SilentlyContinue)
+
+        foreach ($file in $preferenceFiles) {
+            try {
+                $text = Get-Content -LiteralPath $file.FullName -Raw
+
+                if ($text -match '"kGlic"' -or $text -match '"glic_rollout_eligibility"\s*:\s*true' -or $text -match '"gemini_thread"') {
+                    $hasGeminiSidePanelState = $true
+                    break
+                }
+            }
+            catch {
+            }
+        }
+    }
+
+    if (-not $profileIsEligible) {
+        $reasons.Add('No Chrome profile was confirmed as eligible for Gemini in Chrome.')
+    }
+
+    if (-not $hasGeminiSidePanelState) {
+        $reasons.Add('No existing Gemini side panel state was found in Chrome preferences.')
+    }
+
+    return [pscustomobject]@{
+        Ready = $chrome.Found -and $profileIsEligible -and $hasGeminiSidePanelState
+        Chrome = $chrome
+        Reasons = $reasons.ToArray()
+    }
+}
+
+function Show-GeminiSetupWarning {
+    param(
+        [Parameter(Mandatory)]
+        $SetupResult
+    )
+
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = 'Gemini in Chrome setup not confirmed'
+    $form.StartPosition = 'CenterScreen'
+    $form.FormBorderStyle = 'FixedDialog'
+    $form.MaximizeBox = $false
+    $form.MinimizeBox = $false
+    $form.ClientSize = New-Object System.Drawing.Size(620, 360)
+
+    $label = New-Object System.Windows.Forms.Label
+    $label.AutoSize = $false
+    $label.Location = New-Object System.Drawing.Point(14, 14)
+    $label.Size = New-Object System.Drawing.Size(590, 190)
+    $label.Text = "Gemini for Chrome Task Manager uses the official Gemini side panel in Chrome. The installer could not confirm that Gemini in Chrome is ready on this Windows profile.`r`n`r`nChecks:`r`n- " + ($SetupResult.Reasons -join "`r`n- ") + "`r`n`r`nYou can open Google's official setup/help page, cancel installation, or continue anyway."
+    $form.Controls.Add($label)
+
+    $checkbox = New-Object System.Windows.Forms.CheckBox
+    $checkbox.Location = New-Object System.Drawing.Point(17, 225)
+    $checkbox.Size = New-Object System.Drawing.Size(560, 24)
+    $checkbox.Text = 'I understand this Application may not work'
+    $form.Controls.Add($checkbox)
+
+    $openHelpButton = New-Object System.Windows.Forms.Button
+    $openHelpButton.Location = New-Object System.Drawing.Point(17, 285)
+    $openHelpButton.Size = New-Object System.Drawing.Size(170, 30)
+    $openHelpButton.Text = 'Open Official Setup Help'
+    $openHelpButton.Add_Click({ Start-Process $OfficialGeminiChromeHelpUrl })
+    $form.Controls.Add($openHelpButton)
+
+    $continueButton = New-Object System.Windows.Forms.Button
+    $continueButton.Location = New-Object System.Drawing.Point(365, 285)
+    $continueButton.Size = New-Object System.Drawing.Size(115, 30)
+    $continueButton.Text = 'Continue Anyway'
+    $continueButton.Enabled = $false
+    $continueButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+    $form.Controls.Add($continueButton)
+
+    $cancelButton = New-Object System.Windows.Forms.Button
+    $cancelButton.Location = New-Object System.Drawing.Point(490, 285)
+    $cancelButton.Size = New-Object System.Drawing.Size(115, 30)
+    $cancelButton.Text = 'Cancel Install'
+    $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+    $form.Controls.Add($cancelButton)
+
+    $checkbox.Add_CheckedChanged({ $continueButton.Enabled = $checkbox.Checked })
+    $form.AcceptButton = $continueButton
+    $form.CancelButton = $cancelButton
+
+    return $form.ShowDialog()
+}
+
+function Confirm-GeminiInChromeSetup {
+    $setupResult = Test-GeminiInChromeSetup
+
+    if ($setupResult.Ready) {
+        Write-Host 'Gemini in Chrome setup check passed.'
+        return
+    }
+
+    Write-Host 'Gemini in Chrome setup could not be confirmed.'
+
+    foreach ($reason in $setupResult.Reasons) {
+        Write-Host ('- {0}' -f $reason)
+    }
+
+    $dialogResult = Show-GeminiSetupWarning -SetupResult $setupResult
+
+    if ($dialogResult -ne [System.Windows.Forms.DialogResult]::OK) {
+        throw 'Installation cancelled because Gemini in Chrome setup was not confirmed.'
+    }
+}
 
 function Publish-App {
     Write-Host 'Publishing application...'
@@ -167,6 +339,7 @@ function Register-Uninstaller {
     New-ItemProperty -Path $UninstallKeyPath -Name 'NoRepair' -Value 1 -PropertyType DWord -Force | Out-Null
 }
 
+Confirm-GeminiInChromeSetup
 Publish-App
 Stop-RunningApp
 Remove-LegacyInstallArtifacts

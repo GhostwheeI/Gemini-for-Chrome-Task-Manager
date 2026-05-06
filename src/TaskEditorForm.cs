@@ -9,6 +9,7 @@ internal sealed class TaskEditorForm : Form
     private readonly DateTimePicker nextRunTimePicker = new();
     private readonly NumericUpDown repeatEveryInput = new();
     private readonly ComboBox repeatUnitComboBox = new();
+    private readonly ComboBox reasoningComboBox = new();
     private readonly ComboBox completionActionComboBox = new();
     private readonly CheckBox runImmediatelyCheckBox = new();
     private readonly CheckBox enabledCheckBox = new();
@@ -22,8 +23,8 @@ internal sealed class TaskEditorForm : Form
 
         Text = "Gemini Scheduled Task";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(680, 560);
-        Size = new Size(760, 680);
+        MinimumSize = new Size(680, 600);
+        Size = new Size(760, 720);
 
         BuildLayout();
         LoadTask();
@@ -41,7 +42,7 @@ internal sealed class TaskEditorForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(12),
             ColumnCount = 2,
-            RowCount = 10
+            RowCount = 11
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -95,23 +96,30 @@ internal sealed class TaskEditorForm : Form
         repeatPanel.Controls.Add(repeatUnitComboBox);
         root.Controls.Add(repeatPanel, 1, 5);
 
-        AddLabel(root, "When run", 6);
+        AddLabel(root, "Reasoning", 6);
+        reasoningComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        reasoningComboBox.Items.AddRange(["Auto", "Fast", "Thinking", "Pro"]);
+        reasoningComboBox.Dock = DockStyle.Left;
+        reasoningComboBox.Width = 200;
+        root.Controls.Add(reasoningComboBox, 1, 6);
+
+        AddLabel(root, "When run", 7);
         completionActionComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
         completionActionComboBox.Items.AddRange(["Do Nothing", "Show notification"]);
         completionActionComboBox.Dock = DockStyle.Left;
         completionActionComboBox.Width = 200;
-        root.Controls.Add(completionActionComboBox, 1, 6);
+        root.Controls.Add(completionActionComboBox, 1, 7);
 
-        AddLabel(root, "Run Immediately", 7);
+        AddLabel(root, "Run Immediately", 8);
         runImmediatelyCheckBox.Text = "Run this task as soon as it is saved";
         runImmediatelyCheckBox.Dock = DockStyle.Fill;
-        root.Controls.Add(runImmediatelyCheckBox, 1, 7);
+        root.Controls.Add(runImmediatelyCheckBox, 1, 8);
 
-        AddLabel(root, "Enabled", 8);
+        AddLabel(root, "Enabled", 9);
         enabledCheckBox.Text = "Enable this task";
         enabledCheckBox.Checked = true;
         enabledCheckBox.Dock = DockStyle.Fill;
-        root.Controls.Add(enabledCheckBox, 1, 8);
+        root.Controls.Add(enabledCheckBox, 1, 9);
 
         FlowLayoutPanel buttons = new()
         {
@@ -136,14 +144,14 @@ internal sealed class TaskEditorForm : Form
 
         buttons.Controls.Add(saveButton);
         buttons.Controls.Add(cancelButton);
-        root.Controls.Add(buttons, 1, 9);
+        root.Controls.Add(buttons, 1, 10);
 
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-        for (int row = 2; row <= 9; row++)
+        for (int row = 2; row <= 10; row++)
         {
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, row == 9 ? 44 : 36));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, row == 10 ? 44 : 36));
         }
 
         Controls.Add(root);
@@ -175,6 +183,13 @@ internal sealed class TaskEditorForm : Form
         {
             RepeatUnit.Hours => 1,
             RepeatUnit.Days => 2,
+            _ => 0
+        };
+        reasoningComboBox.SelectedIndex = task.ReasoningLevel switch
+        {
+            GeminiReasoningLevel.Fast => 1,
+            GeminiReasoningLevel.Thinking => 2,
+            GeminiReasoningLevel.Pro => 3,
             _ => 0
         };
         completionActionComboBox.SelectedIndex = task.CompletionAction == CompletionAction.ShowNotification ? 1 : 0;
@@ -216,6 +231,13 @@ internal sealed class TaskEditorForm : Form
             1 => RepeatUnit.Hours,
             2 => RepeatUnit.Days,
             _ => RepeatUnit.Minutes
+        };
+        task.ReasoningLevel = reasoningComboBox.SelectedIndex switch
+        {
+            1 => GeminiReasoningLevel.Fast,
+            2 => GeminiReasoningLevel.Thinking,
+            3 => GeminiReasoningLevel.Pro,
+            _ => GeminiReasoningLevel.Auto
         };
         task.CompletionAction = completionActionComboBox.SelectedIndex == 1
             ? CompletionAction.ShowNotification

@@ -21,6 +21,14 @@ internal enum RepeatUnit
     Days
 }
 
+internal enum GeminiReasoningLevel
+{
+    Auto,
+    Fast,
+    Thinking,
+    Pro
+}
+
 internal sealed class ScheduledGeminiTask
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
@@ -30,6 +38,8 @@ internal sealed class ScheduledGeminiTask
     public bool Enabled { get; set; } = true;
 
     public string Prompt { get; set; } = string.Empty;
+
+    public GeminiReasoningLevel ReasoningLevel { get; set; } = GeminiReasoningLevel.Auto;
 
     public ScheduleKind ScheduleKind { get; set; } = ScheduleKind.Once;
 
@@ -53,6 +63,7 @@ internal sealed class ScheduledGeminiTask
             Name = Name,
             Enabled = Enabled,
             Prompt = Prompt,
+            ReasoningLevel = ReasoningLevel,
             ScheduleKind = ScheduleKind,
             NextRunLocal = NextRunLocal,
             RepeatEvery = RepeatEvery,
@@ -111,8 +122,16 @@ internal sealed class ScheduledGeminiTask
     public string CompletionDescription =>
         CompletionAction == CompletionAction.ShowNotification ? "Show notification" : "Do Nothing";
 
+    [JsonIgnore]
+    public string ReasoningDescription => ReasoningLevel.ToString();
+
     public void NormalizeLegacyValues()
     {
         RepeatEvery = Math.Max(1, RepeatEvery);
+
+        if (!Enum.IsDefined(ReasoningLevel))
+        {
+            ReasoningLevel = GeminiReasoningLevel.Auto;
+        }
     }
 }

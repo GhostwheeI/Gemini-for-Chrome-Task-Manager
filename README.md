@@ -5,8 +5,9 @@ Windows tray utility for scheduling Gemini-in-Chrome tasks.
 Primary features:
 
 - Schedule Gemini for Chrome tasks
-- Define the prompt, next run, repeat interval, and completion action
+- Define the prompt, reasoning mode, next run, repeat interval, and completion action
 - Auto-click Gemini `Start Task` approvals when a scheduled task starts
+- Uses Chrome's built-in `Ask Gemini` side panel instead of navigating to the Gemini web app
 
 ## Install
 
@@ -27,6 +28,12 @@ It also creates:
 - A Start Menu shortcut
 - A Windows Installed Apps uninstall entry
 - A tray icon while the app is running
+
+Before installing, the installer checks whether Gemini in Chrome appears to be available for the local Chrome profile. If that check cannot confirm readiness, it shows a warning with a link to Google's official Gemini in Chrome setup/help page:
+
+```text
+https://support.google.com/chrome/answer/16283624
+```
 
 ## Configure
 
@@ -71,10 +78,12 @@ Scheduled tasks are stored in:
 
 Scheduled task behavior:
 
-- At the scheduled time, the app opens Gemini in Chrome.
+- At the scheduled time, the app opens Chrome and uses the `Ask Gemini` button to open Gemini in Chrome's side panel.
+- Chrome must be brought to the foreground while a scheduled task starts because the Gemini side panel is a Chrome UI surface, not a background API.
 - If `Run Immediately` is checked while saving a task, the app starts that task right away.
+- It applies the task's selected reasoning mode when the side panel exposes the mode picker.
 - It copies the task prompt to the clipboard.
-- It attempts to paste and send the prompt in the active Gemini page.
+- It attempts to paste and send the prompt in the Chrome Gemini side panel prompt box.
 - `Start Task` approvals are clicked automatically for that scheduled task while it starts.
 - The completion action runs when the scheduled task starts.
 
