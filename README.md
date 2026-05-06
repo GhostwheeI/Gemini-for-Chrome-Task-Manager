@@ -1,8 +1,8 @@
 # Gemini for Chrome Task Manager
 
-Gemini for Chrome Task Manager is a Windows tray app for scheduling prompts through Chrome's built-in **Ask Gemini** side panel.
+Gemini for Chrome Task Manager is the **GUI/tray variant** of the Gemini for Chrome task scheduler. It is a Windows tray app for scheduling prompts through Chrome's built-in **Ask Gemini** side panel.
 
-It is designed for people who already use Gemini in Chrome and want repeatable scheduled tasks with automatic `Start Task` approval handling, run history, completion detection, and cleanup.
+It is designed for people who already use Gemini in Chrome and want a graphical task manager for repeatable scheduled tasks with automatic `Start Task` approval handling, run history, completion detection, and cleanup.
 
 ## Features
 
@@ -32,7 +32,7 @@ https://support.google.com/chrome/answer/16283624
 
 ## Install
 
-Download the latest release zip from GitHub Releases, extract it, then run:
+Download the latest **GUI/tray release** zip from GitHub Releases, extract it, then run:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Install-GeminiForChromeManager.ps1
@@ -50,7 +50,7 @@ It creates:
 - A Windows Installed Apps uninstall entry.
 - A tray icon when the app is running.
 
-The release package includes a prebuilt app. When running from a source checkout instead, the installer builds the app with `dotnet publish`.
+The GUI release package includes a prebuilt Windows tray app. When running from a source checkout instead, the installer builds the app with `dotnet publish`.
 
 Before installation, the installer checks whether Gemini in Chrome appears to be available. If readiness cannot be confirmed, it shows a warning with a link to Google's official setup/help page. You can cancel, open the help page, or check **I understand this Application may not work** to continue anyway.
 

@@ -2,9 +2,9 @@
 
 ## 1.0.0 - 2026-05-06
 
-Initial production release.
+Initial production release of the GUI/tray variant.
 
-- Windows tray app for scheduling Gemini in Chrome side-panel tasks.
+- Windows GUI tray app for scheduling Gemini in Chrome side-panel tasks.
 - Per-user installer and uninstaller with Windows Installed Apps registration.
 - Task creation, enable/disable toggles, task configuration, task history, settings, and Chrome profile selection from the tray menu.
 - Prompt, schedule, repeat interval, reasoning mode, completion action, and run-immediately task options.
