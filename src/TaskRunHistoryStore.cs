@@ -42,19 +42,26 @@ internal static class TaskRunHistoryStore
 
     public static void Append(TaskRunHistoryEntry entry)
     {
-        List<TaskRunHistoryEntry> entries = Load();
-        entries.Add(entry);
+        try
+        {
+            List<TaskRunHistoryEntry> entries = Load();
+            entries.Add(entry);
 
-        List<TaskRunHistoryEntry> pruned = entries
-            .GroupBy(existing => existing.TaskId)
-            .SelectMany(group => group
-                .OrderByDescending(existing => existing.StartedLocal)
-                .Take(MaxEntriesPerTask))
-            .OrderBy(existing => existing.StartedLocal)
-            .ToList();
+            List<TaskRunHistoryEntry> pruned = entries
+                .GroupBy(existing => existing.TaskId)
+                .SelectMany(group => group
+                    .OrderByDescending(existing => existing.StartedLocal)
+                    .Take(MaxEntriesPerTask))
+                .OrderBy(existing => existing.StartedLocal)
+                .ToList();
 
-        Directory.CreateDirectory(SettingsStore.SettingsDirectory);
-        string json = JsonSerializer.Serialize(pruned, JsonOptions);
-        File.WriteAllText(HistoryPath, json);
+            Directory.CreateDirectory(SettingsStore.SettingsDirectory);
+            string json = JsonSerializer.Serialize(pruned, JsonOptions);
+            File.WriteAllText(HistoryPath, json);
+        }
+        catch (Exception exception)
+        {
+            AppLog.Error("Failed to append task run history entry.", exception);
+        }
     }
 }

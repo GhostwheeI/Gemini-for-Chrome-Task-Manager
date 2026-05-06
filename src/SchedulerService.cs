@@ -5,7 +5,6 @@ internal sealed class SchedulerService : IDisposable
     private readonly List<ScheduledGeminiTask> tasks;
     private readonly GeminiTaskRunner runner;
     private readonly System.Windows.Forms.Timer timer;
-    private readonly List<PendingCompletion> pendingCompletions = [];
     private bool isRunningDueTasks;
 
     public event EventHandler<string>? StatusChanged;
@@ -88,7 +87,6 @@ internal sealed class SchedulerService : IDisposable
         try
         {
             DateTime nowLocal = DateTime.Now;
-            CompleteDueTasks(nowLocal);
 
             foreach (ScheduledGeminiTask task in tasks.Where(task => task.Enabled && task.NextRunLocal <= nowLocal).ToList())
             {
@@ -131,7 +129,7 @@ internal sealed class SchedulerService : IDisposable
             return;
         }
 
-        string message = $"Scheduled Gemini task started: {task.Name}";
+        string message = $"Scheduled Gemini task finished: {task.Name}";
 
         if (task.CompletionAction == CompletionAction.ShowNotification)
         {
@@ -139,23 +137,6 @@ internal sealed class SchedulerService : IDisposable
         }
 
         SetStatus(GetIdleStatus());
-    }
-
-    private void CompleteDueTasks(DateTime nowLocal)
-    {
-        foreach (PendingCompletion completion in pendingCompletions.Where(completion => completion.DueLocal <= nowLocal).ToList())
-        {
-            pendingCompletions.Remove(completion);
-            string message = $"Scheduled Gemini task window ended: {completion.TaskName}";
-            AppLog.Info($"{message}. CompletionAction={completion.CompletionAction}.");
-
-            NotificationRequested?.Invoke(this, message);
-        }
-
-        if (pendingCompletions.Count == 0)
-        {
-            SetStatus(GetIdleStatus());
-        }
     }
 
     private string GetIdleStatus()
@@ -180,10 +161,4 @@ internal sealed class SchedulerService : IDisposable
         timer.Dispose();
         AppLog.Info("Scheduler stopped.");
     }
-
-    private sealed record PendingCompletion(
-        string TaskId,
-        string TaskName,
-        DateTime DueLocal,
-        CompletionAction CompletionAction);
 }

@@ -1,17 +1,38 @@
 # Gemini for Chrome Task Manager
 
-Windows tray utility for scheduling Gemini-in-Chrome tasks.
+Gemini for Chrome Task Manager is a Windows tray app for scheduling prompts through Chrome's built-in **Ask Gemini** side panel.
 
-Primary features:
+It is designed for people who already use Gemini in Chrome and want repeatable scheduled tasks with automatic `Start Task` approval handling, run history, completion detection, and cleanup.
 
-- Schedule Gemini for Chrome tasks
-- Define the prompt, reasoning mode, next run, repeat interval, and completion action
-- Auto-click Gemini `Start Task` approvals when a scheduled task starts
-- Uses Chrome's built-in `Ask Gemini` side panel instead of navigating to the Gemini web app
+## Features
+
+- Schedule Gemini in Chrome side-panel tasks.
+- Define prompt, next run, repeat interval, reasoning mode, completion action, and whether the task should run immediately after save.
+- Right-click tray menu for task creation, task enable/disable, task configuration, task history, Chrome profile selection, settings, about, and exit.
+- Automatic `Start Task` approval clicking only while scheduled Gemini tasks are running.
+- Gemini side-panel completion monitoring for completed, error, interrupted, and timeout states.
+- Chrome cleanup after task completion: closes the Gemini side panel and the task tab/window the app opened.
+- Per-task run history with start time, end time, result, and exception code when a definite issue prevented completion.
+- Light, dark, and automatic system theme modes.
+- Rotating diagnostic logs with GUI control for diagnostic logging and JSON settings for advanced retention/timing.
+- Per-user install/uninstall through normal Windows Installed Apps behavior.
+
+## Requirements
+
+- Windows 10 or later.
+- Google Chrome.
+- Gemini in Chrome enabled for the Chrome profile you want to use.
+- The `Ask Gemini` button/side panel must be available in Chrome.
+
+Official Gemini in Chrome help:
+
+```text
+https://support.google.com/chrome/answer/16283624
+```
 
 ## Install
 
-Run:
+Download the latest release zip from GitHub Releases, extract it, then run:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Install-GeminiForChromeManager.ps1
@@ -23,30 +44,83 @@ The installer is per-user and does not require admin rights. It installs to:
 %LocalAppData%\Programs\Gemini for Chrome Task Manager
 ```
 
-It also creates:
+It creates:
 
-- A Start Menu shortcut
-- A Windows Installed Apps uninstall entry
-- A tray icon while the app is running
+- A Start Menu shortcut.
+- A Windows Installed Apps uninstall entry.
+- A tray icon when the app is running.
 
-Before installing, the installer checks whether Gemini in Chrome appears to be available for the local Chrome profile. If that check cannot confirm readiness, it shows a warning with a link to Google's official Gemini in Chrome setup/help page:
+The release package includes a prebuilt app. When running from a source checkout instead, the installer builds the app with `dotnet publish`.
+
+Before installation, the installer checks whether Gemini in Chrome appears to be available. If readiness cannot be confirmed, it shows a warning with a link to Google's official setup/help page. You can cancel, open the help page, or check **I understand this Application may not work** to continue anyway.
+
+## Tray Menu
+
+Right-click the tray icon:
+
+- `Status`: shows `No Scheduled Tasks`, `Idle`, or the active task status.
+- `Create a Task`: opens the task editor.
+- `Enable/Disable Tasks`: submenu of configured tasks with visible check boxes.
+- `Configure Tasks`: submenu of configured tasks that opens the task editor.
+- `Task History`: submenu of configured tasks that opens run history for that task.
+- `Chrome Profile [Experimental]`: selects the Chrome profile directory used for scheduled runs.
+- `Settings`: app-level settings.
+- `About`: version and task summary.
+- `Exit`: closes the tray app.
+
+## Task Options
+
+Each scheduled task supports:
+
+- Task name.
+- Prompt.
+- Schedule: run once or repeat every N minutes/hours/days.
+- Next run date and time.
+- Reasoning: `Auto`, `Fast`, `Thinking`, or `Pro`.
+- Completion action: `Do Nothing` or `Show notification`.
+- Run immediately after save.
+- Enabled/disabled state.
+
+`Start Task` approvals are always allowed during a scheduled task run. Outside that scheduled-task approval window, the approval watcher stays inactive.
+
+## Task Completion And Cleanup
+
+After sending a prompt, the app monitors Chrome's Gemini side panel. It treats a task as finished when Gemini returns to a stable idle state. It flags definite failures when Gemini exposes an error, interruption, or when the configured completion timeout is reached.
+
+After the task reaches a terminal state, the app attempts to:
+
+- Close the Gemini side panel.
+- Close the task-created Chrome window if Chrome was not already running.
+- Otherwise close the active task tab, leaving the user's existing Chrome session in place.
+
+Chrome must come to the foreground while a task starts because the Gemini side panel is a Chrome UI surface, not a background API.
+
+## Task History
+
+Task history is stored in:
 
 ```text
-https://support.google.com/chrome/answer/16283624
+%AppData%\Gemini for Chrome Task Manager\task-history.json
 ```
 
-## Configure
+The app keeps the most recent 100 history entries per task. Each entry includes:
 
-Right-click the tray icon to change settings:
+- Started date/time.
+- Ended date/time.
+- Whether a definite exception was detected.
+- Exception code, when applicable.
+- Result text.
 
-- `Create a Task`
-- `Enable/Disable Tasks`
-- `Configure Tasks`
-- `Task History`
-- `Chrome Profile [Experimental]`
-- `Settings`
-- `About`
-- `Exit`
+Exception codes:
+
+- `GCTM-001`: Task prompt was empty, so nothing could be sent to Gemini.
+- `GCTM-002`: Gemini side panel opened, but the prompt box could not be found or focused.
+- `GCTM-003`: Gemini displayed a definite error or retry state.
+- `GCTM-004`: Gemini displayed an interrupted, stopped, or cancelled state.
+- `GCTM-005`: Gemini did not return to idle before the configured completion timeout.
+- `GCTM-006`: The task runner hit an unexpected application exception.
+
+## Settings
 
 Settings are stored in:
 
@@ -54,13 +128,13 @@ Settings are stored in:
 %AppData%\Gemini for Chrome Task Manager\settings.json
 ```
 
-The Settings window intentionally exposes only:
+The Settings window exposes:
 
 - `Start with Windows`
 - `Diagnostic Logging`
-- `Theme`
+- `Theme`: `Auto`, `Light`, or `Dark`
 
-Advanced settings can be changed in `settings.json`. The default configuration is:
+Advanced settings can be changed directly in `settings.json`:
 
 ```json
 {
@@ -77,42 +151,11 @@ Advanced settings can be changed in `settings.json`. The default configuration i
 }
 ```
 
-Scheduled tasks are stored in:
+Task definitions are stored in:
 
 ```text
 %AppData%\Gemini for Chrome Task Manager\tasks.json
 ```
-
-Task run history is stored in:
-
-```text
-%AppData%\Gemini for Chrome Task Manager\task-history.json
-```
-
-The app keeps the most recent 100 history entries per task. History records include when the run started, when it ended, whether a definite exception was detected, and the exception code when one applies.
-
-Task exception codes:
-
-- `GCTM-001`: Task prompt was empty, so nothing could be sent to Gemini.
-- `GCTM-002`: Gemini side panel opened, but the prompt box could not be found or focused.
-- `GCTM-003`: Gemini displayed a definite error or retry state.
-- `GCTM-004`: Gemini displayed an interrupted, stopped, or cancelled state.
-- `GCTM-005`: Gemini did not return to idle before the configured completion timeout.
-- `GCTM-006`: The task runner hit an unexpected application exception.
-
-Scheduled task behavior:
-
-- At the scheduled time, the app opens Chrome and uses the `Ask Gemini` button to open Gemini in Chrome's side panel.
-- Chrome is launched with the selected `Chrome Profile [Experimental]` profile directory. `Default` is used unless another detected Chrome profile is selected.
-- Chrome must be brought to the foreground while a scheduled task starts because the Gemini side panel is a Chrome UI surface, not a background API.
-- If `Run Immediately` is checked while saving a task, the app starts that task right away.
-- It applies the task's selected reasoning mode when the side panel exposes the mode picker.
-- It copies the task prompt to the clipboard.
-- It attempts to paste and send the prompt in the Chrome Gemini side panel prompt box.
-- `Start Task` approvals are clicked automatically for that scheduled task while it starts.
-- The app monitors the Gemini side panel for completion, error, interruption, or timeout signals.
-- When the task stops moving forward, the app closes the Gemini side panel and the dedicated Chrome task tab/window it opened.
-- The completion action runs after the task monitor finishes.
 
 Diagnostic logs are stored in:
 
@@ -120,7 +163,7 @@ Diagnostic logs are stored in:
 %AppData%\Gemini for Chrome Task Manager\logs
 ```
 
-Diagnostic logging can be enabled or disabled from `Settings`. Log retention is controlled from `settings.json`. By default, the app keeps at most five `diagnostic*.log` files, and each file rotates at about 256 KB. It logs startup, settings changes, candidate detections, clicks, cooldown skips, errors, and heartbeat summaries with scan counts and timing. It does not write a separate line for every idle scan.
+By default, the app keeps at most five diagnostic log files and rotates each at about 256 KB.
 
 ## Uninstall
 
@@ -131,3 +174,19 @@ You can also run:
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Uninstall-GeminiForChromeManager.ps1
 ```
+
+## Developer Verification
+
+From a source checkout:
+
+```powershell
+dotnet build .\src\GeminiForChromeManager.csproj --configuration Release
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Install-GeminiForChromeManager.ps1 -NoLaunch -BuildFromSource
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Test-Smoke.ps1
+```
+
+The smoke test backs up current user task/history data, starts the installed app with a temporary empty-prompt task, verifies a `GCTM-001` history entry, restores the original data, and restarts the app if it was running before the test.
+
+## License
+
+MIT License. See [LICENSE](LICENSE).

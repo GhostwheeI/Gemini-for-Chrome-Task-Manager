@@ -7,7 +7,8 @@ shows the app through the normal Installed Apps / Apps & Features uninstall UI.
 
 [CmdletBinding()]
 param(
-    [switch]$NoLaunch
+    [switch]$NoLaunch,
+    [switch]$BuildFromSource
 )
 
 $ErrorActionPreference = 'Stop'
@@ -16,7 +17,7 @@ $AppName = 'Gemini for Chrome Task Manager'
 $LegacyAppName = 'Gemini for Chrome Manager'
 $AppId = 'GeminiForChromeTaskManager'
 $LegacyAppId = 'GeminiForChromeManager'
-$Version = '0.13.0'
+$Version = '1.0.0'
 $Publisher = 'Ghostwheel'
 $OfficialGeminiChromeHelpUrl = 'https://support.google.com/chrome/answer/16283624'
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -205,6 +206,17 @@ function Confirm-GeminiInChromeSetup {
 }
 
 function Publish-App {
+    $publishedExe = Join-Path $PublishPath 'GeminiForChromeManager.exe'
+
+    if (-not $BuildFromSource -and (Test-Path -LiteralPath $publishedExe)) {
+        Write-Host 'Using bundled published application.'
+        return
+    }
+
+    if (-not (Test-Path -LiteralPath $ProjectPath)) {
+        throw 'Bundled publish output was not found and source project is unavailable. Download the full release package or run from the source repository.'
+    }
+
     Write-Host 'Publishing application...'
 
     dotnet publish $ProjectPath `
