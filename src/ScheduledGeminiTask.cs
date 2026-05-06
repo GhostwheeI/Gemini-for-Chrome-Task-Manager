@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace GeminiForChromeManager;
 
 internal enum ScheduleKind
@@ -37,10 +39,6 @@ internal sealed class ScheduledGeminiTask
 
     public RepeatUnit RepeatUnit { get; set; } = RepeatUnit.Hours;
 
-    public int RepeatEveryMinutes { get; set; } = 60;
-
-    public int RunWindowMinutes { get; set; } = 30;
-
     public CompletionAction CompletionAction { get; set; } = CompletionAction.ShowNotification;
 
     public DateTime? LastRunLocal { get; set; }
@@ -59,8 +57,6 @@ internal sealed class ScheduledGeminiTask
             NextRunLocal = NextRunLocal,
             RepeatEvery = RepeatEvery,
             RepeatUnit = RepeatUnit,
-            RepeatEveryMinutes = RepeatEveryMinutes,
-            RunWindowMinutes = RunWindowMinutes,
             CompletionAction = CompletionAction,
             LastRunLocal = LastRunLocal,
             LastResult = LastResult
@@ -107,29 +103,16 @@ internal sealed class ScheduledGeminiTask
             ? string.Empty
             : $"{Math.Max(1, RepeatEvery)} {RepeatUnit.ToString().ToLowerInvariant()}";
 
+    [JsonIgnore]
+    public string ScheduleDescription =>
+        ScheduleKind == ScheduleKind.Once ? "Run once" : "Repeat every";
+
+    [JsonIgnore]
+    public string CompletionDescription =>
+        CompletionAction == CompletionAction.ShowNotification ? "Show notification" : "Do Nothing";
+
     public void NormalizeLegacyValues()
     {
-        if (RepeatEvery > 0)
-        {
-            return;
-        }
-
-        int legacyMinutes = Math.Max(1, RepeatEveryMinutes);
-
-        if (legacyMinutes % 1440 == 0)
-        {
-            RepeatEvery = legacyMinutes / 1440;
-            RepeatUnit = RepeatUnit.Days;
-        }
-        else if (legacyMinutes % 60 == 0)
-        {
-            RepeatEvery = legacyMinutes / 60;
-            RepeatUnit = RepeatUnit.Hours;
-        }
-        else
-        {
-            RepeatEvery = legacyMinutes;
-            RepeatUnit = RepeatUnit.Minutes;
-        }
+        RepeatEvery = Math.Max(1, RepeatEvery);
     }
 }

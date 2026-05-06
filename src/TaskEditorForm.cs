@@ -10,6 +10,7 @@ internal sealed class TaskEditorForm : Form
     private readonly NumericUpDown repeatEveryInput = new();
     private readonly ComboBox repeatUnitComboBox = new();
     private readonly ComboBox completionActionComboBox = new();
+    private readonly CheckBox runImmediatelyCheckBox = new();
     private readonly CheckBox enabledCheckBox = new();
     private readonly Label repeatLabel = new();
     private readonly ScheduledGeminiTask task;
@@ -22,7 +23,7 @@ internal sealed class TaskEditorForm : Form
         Text = "Gemini Scheduled Task";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(680, 560);
-        Size = new Size(760, 640);
+        Size = new Size(760, 680);
 
         BuildLayout();
         LoadTask();
@@ -31,6 +32,8 @@ internal sealed class TaskEditorForm : Form
 
     public ScheduledGeminiTask ResultTask => task;
 
+    public bool RunImmediately => runImmediatelyCheckBox.Checked;
+
     private void BuildLayout()
     {
         TableLayoutPanel root = new()
@@ -38,7 +41,7 @@ internal sealed class TaskEditorForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(12),
             ColumnCount = 2,
-            RowCount = 9
+            RowCount = 10
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -99,11 +102,16 @@ internal sealed class TaskEditorForm : Form
         completionActionComboBox.Width = 200;
         root.Controls.Add(completionActionComboBox, 1, 6);
 
-        AddLabel(root, "Enabled", 7);
+        AddLabel(root, "Run Immediately", 7);
+        runImmediatelyCheckBox.Text = "Run this task as soon as it is saved";
+        runImmediatelyCheckBox.Dock = DockStyle.Fill;
+        root.Controls.Add(runImmediatelyCheckBox, 1, 7);
+
+        AddLabel(root, "Enabled", 8);
         enabledCheckBox.Text = "Enable this task";
         enabledCheckBox.Checked = true;
         enabledCheckBox.Dock = DockStyle.Fill;
-        root.Controls.Add(enabledCheckBox, 1, 7);
+        root.Controls.Add(enabledCheckBox, 1, 8);
 
         FlowLayoutPanel buttons = new()
         {
@@ -128,14 +136,14 @@ internal sealed class TaskEditorForm : Form
 
         buttons.Controls.Add(saveButton);
         buttons.Controls.Add(cancelButton);
-        root.Controls.Add(buttons, 1, 8);
+        root.Controls.Add(buttons, 1, 9);
 
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-        for (int row = 2; row <= 8; row++)
+        for (int row = 2; row <= 9; row++)
         {
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, row == 8 ? 44 : 36));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, row == 9 ? 44 : 36));
         }
 
         Controls.Add(root);
@@ -170,6 +178,7 @@ internal sealed class TaskEditorForm : Form
             _ => 0
         };
         completionActionComboBox.SelectedIndex = task.CompletionAction == CompletionAction.ShowNotification ? 1 : 0;
+        runImmediatelyCheckBox.Checked = false;
         enabledCheckBox.Checked = task.Enabled;
     }
 

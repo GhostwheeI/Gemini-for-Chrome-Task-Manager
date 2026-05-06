@@ -34,10 +34,10 @@ internal sealed class TaskManagerForm : Form
 
         grid.Columns.Add(new DataGridViewCheckBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.Enabled), HeaderText = "Enabled", Width = 70 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.Name), HeaderText = "Name", Width = 220 });
-        grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.ScheduleKind), HeaderText = "Schedule", Width = 110 });
+        grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.ScheduleDescription), HeaderText = "Schedule", Width = 110 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.NextRunLocal), HeaderText = "Next run", Width = 150 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.RepeatDescription), HeaderText = "Repeat", Width = 110 });
-        grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.CompletionAction), HeaderText = "Completion", Width = 140 });
+        grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.CompletionDescription), HeaderText = "When run", Width = 140 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(ScheduledGeminiTask.LastResult), HeaderText = "Last result", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
 
         FlowLayoutPanel buttons = new()
@@ -88,7 +88,14 @@ internal sealed class TaskManagerForm : Form
 
         if (editor.ShowDialog(this) == DialogResult.OK)
         {
-            scheduler.AddTask(editor.ResultTask);
+            ScheduledGeminiTask savedTask = editor.ResultTask;
+            scheduler.AddTask(savedTask);
+
+            if (editor.RunImmediately)
+            {
+                scheduler.RunNow(savedTask);
+            }
+
             RefreshGrid();
         }
     }
@@ -106,7 +113,14 @@ internal sealed class TaskManagerForm : Form
 
         if (editor.ShowDialog(this) == DialogResult.OK)
         {
-            scheduler.ReplaceTask(editor.ResultTask);
+            ScheduledGeminiTask savedTask = editor.ResultTask;
+            scheduler.ReplaceTask(savedTask);
+
+            if (editor.RunImmediately)
+            {
+                scheduler.RunNow(savedTask);
+            }
+
             RefreshGrid();
         }
     }

@@ -54,6 +54,7 @@ Scheduled tasks are stored in:
 Scheduled task behavior:
 
 - At the scheduled time, the app opens Gemini in Chrome.
+- If `Run Immediately` is checked while saving a task, the app starts that task right away.
 - It copies the task prompt to the clipboard.
 - It attempts to paste and send the prompt in the active Gemini page.
 - `Start Task` approvals are clicked automatically for that scheduled task while it starts.

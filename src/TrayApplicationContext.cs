@@ -163,7 +163,13 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
         if (editor.ShowDialog() == DialogResult.OK)
         {
-            scheduler.AddTask(editor.ResultTask);
+            ScheduledGeminiTask savedTask = editor.ResultTask;
+            scheduler.AddTask(savedTask);
+
+            if (editor.RunImmediately)
+            {
+                scheduler.RunNow(savedTask);
+            }
         }
     }
 
@@ -173,7 +179,13 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
         if (editor.ShowDialog() == DialogResult.OK)
         {
-            scheduler.ReplaceTask(editor.ResultTask);
+            ScheduledGeminiTask savedTask = editor.ResultTask;
+            scheduler.ReplaceTask(savedTask);
+
+            if (editor.RunImmediately)
+            {
+                scheduler.RunNow(savedTask);
+            }
         }
     }
 
