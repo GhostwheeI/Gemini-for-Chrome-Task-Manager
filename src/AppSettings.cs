@@ -6,15 +6,24 @@ internal sealed class AppSettings
 {
     public bool StartWithWindows { get; set; }
 
-    public double PollSeconds { get; set; } = 1.0;
+    public double PollSeconds { get; set; } = AppSettingsDefaults.PollSeconds;
 
-    public bool DiagnosticLoggingEnabled { get; set; } = true;
+    public bool DiagnosticLoggingEnabled { get; set; } = AppSettingsDefaults.DiagnosticLoggingEnabled;
 
-    public int MaxLogKilobytes { get; set; } = 256;
+    public int MaxLogKilobytes { get; set; } = AppSettingsDefaults.MaxLogKilobytes;
 
-    public int MaxLogFiles { get; set; } = 5;
+    public int MaxLogFiles { get; set; } = AppSettingsDefaults.MaxLogFiles;
 
-    public int HeartbeatMinutes { get; set; } = 1;
+    public int HeartbeatMinutes { get; set; } = AppSettingsDefaults.HeartbeatMinutes;
+}
+
+internal static class AppSettingsDefaults
+{
+    public const bool DiagnosticLoggingEnabled = true;
+    public const double PollSeconds = 1.0;
+    public const int MaxLogKilobytes = 256;
+    public const int MaxLogFiles = 5;
+    public const int HeartbeatMinutes = 1;
 }
 
 internal static class SettingsStore

@@ -45,6 +45,24 @@ Settings are stored in:
 %AppData%\Gemini for Chrome Task Manager\settings.json
 ```
 
+The Settings window intentionally exposes only:
+
+- `Start with Windows`
+- `Diagnostic Logging`
+
+Advanced settings can be changed in `settings.json`. The default configuration is:
+
+```json
+{
+  "StartWithWindows": false,
+  "PollSeconds": 1.0,
+  "DiagnosticLoggingEnabled": true,
+  "MaxLogKilobytes": 256,
+  "MaxLogFiles": 5,
+  "HeartbeatMinutes": 1
+}
+```
+
 Scheduled tasks are stored in:
 
 ```text
@@ -66,7 +84,7 @@ Diagnostic logs are stored in:
 %AppData%\Gemini for Chrome Task Manager\logs
 ```
 
-Logging is configurable from `Settings`. By default, the app keeps at most five `diagnostic*.log` files, and each file rotates at about 256 KB. It logs startup, settings changes, candidate detections, clicks, cooldown skips, errors, and heartbeat summaries with scan counts and timing. It does not write a separate line for every idle scan.
+Diagnostic logging can be enabled or disabled from `Settings`. Log retention is controlled from `settings.json`. By default, the app keeps at most five `diagnostic*.log` files, and each file rotates at about 256 KB. It logs startup, settings changes, candidate detections, clicks, cooldown skips, errors, and heartbeat summaries with scan counts and timing. It does not write a separate line for every idle scan.
 
 ## Uninstall
 
