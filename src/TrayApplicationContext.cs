@@ -22,7 +22,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         scheduler.StatusChanged += (_, status) => UpdateStatus(status);
         scheduler.NotificationRequested += (_, message) => ShowNotification(message);
 
-        statusItem = new ToolStripMenuItem("Status: Idle")
+        statusItem = new ToolStripMenuItem("Status: Starting")
         {
             Enabled = false
         };
@@ -52,12 +52,12 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private void RebuildMenu()
     {
         menu.Items.Clear();
-        ToolStripMenuItem titleItem = new(AppInfo.AppName)
+        ToolStripMenuItem titleItem = new($"{AppInfo.AppName} {AppInfo.Version}")
         {
             Enabled = false
         };
 
-        ToolStripMenuItem createTaskItem = new("Create a Task for Gemini in Chrome");
+        ToolStripMenuItem createTaskItem = new("Create a Task");
         createTaskItem.Click += (_, _) => CreateTask();
 
         ToolStripMenuItem enableDisableMenu = new("Enable/Disable Tasks");

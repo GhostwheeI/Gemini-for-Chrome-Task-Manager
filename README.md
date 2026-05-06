@@ -32,7 +32,7 @@ It also creates:
 
 Right-click the tray icon to change settings:
 
-- `Create a Task for Gemini in Chrome`
+- `Create a Task`
 - `Enable/Disable Tasks`
 - `Configure Tasks`
 - `Settings`

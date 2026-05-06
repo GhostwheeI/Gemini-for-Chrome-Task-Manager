@@ -25,12 +25,12 @@ internal sealed class SchedulerService : IDisposable
 
     public IReadOnlyList<ScheduledGeminiTask> Tasks => tasks;
 
-    public string StatusText { get; private set; } = "Scheduler idle";
+    public string StatusText { get; private set; } = "No Scheduled Tasks";
 
     public void Start()
     {
         timer.Start();
-        SetStatus("Idle");
+        SetStatus(GetIdleStatus());
         AppLog.Info($"Scheduler started. TaskCount={tasks.Count}.");
         RunDueWork();
     }
@@ -38,6 +38,7 @@ internal sealed class SchedulerService : IDisposable
     public void SaveTasks()
     {
         ScheduledTaskStore.Save(tasks);
+        SetStatus(GetIdleStatus());
         AppLog.Info($"Scheduled tasks saved. TaskCount={tasks.Count}.");
     }
 
@@ -112,7 +113,7 @@ internal sealed class SchedulerService : IDisposable
 
         if (!started)
         {
-            SetStatus("Idle");
+            SetStatus(GetIdleStatus());
             return;
         }
 
@@ -123,7 +124,7 @@ internal sealed class SchedulerService : IDisposable
             NotificationRequested?.Invoke(this, message);
         }
 
-        SetStatus("Idle");
+        SetStatus(GetIdleStatus());
     }
 
     private void CompleteDueTasks(DateTime nowLocal)
@@ -139,8 +140,13 @@ internal sealed class SchedulerService : IDisposable
 
         if (pendingCompletions.Count == 0)
         {
-            SetStatus("Idle");
+            SetStatus(GetIdleStatus());
         }
+    }
+
+    private string GetIdleStatus()
+    {
+        return tasks.Count == 0 ? "No Scheduled Tasks" : "Idle";
     }
 
     private void SetStatus(string value)
