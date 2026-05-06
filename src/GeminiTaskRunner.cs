@@ -5,10 +5,12 @@ namespace GeminiForChromeManager;
 internal sealed class GeminiTaskRunner
 {
     private readonly ApprovalWatcher approvalWatcher;
+    private readonly AppSettings settings;
 
-    public GeminiTaskRunner(ApprovalWatcher approvalWatcher)
+    public GeminiTaskRunner(ApprovalWatcher approvalWatcher, AppSettings settings)
     {
         this.approvalWatcher = approvalWatcher;
+        this.settings = settings;
     }
 
     public bool Run(ScheduledGeminiTask task)
@@ -20,14 +22,14 @@ internal sealed class GeminiTaskRunner
             return false;
         }
 
-        AppLog.Info($"Scheduled task \"{task.Name}\" starting. ScheduleKind={task.ScheduleKind}; Reasoning={task.ReasoningLevel}; CompletionAction={task.CompletionAction}.");
+        AppLog.Info($"Scheduled task \"{task.Name}\" starting. ScheduleKind={task.ScheduleKind}; Reasoning={task.ReasoningLevel}; ChromeProfile={settings.ChromeProfileDirectory}; CompletionAction={task.CompletionAction}.");
 
         TimeSpan approvalWindow = TimeSpan.FromMinutes(15);
         approvalWatcher.AllowStartTaskApprovalsForScheduledTask(task.Name, approvalWindow);
 
         try
         {
-            EnsureChromeIsOpen();
+            EnsureChromeIsOpen(settings.ChromeProfileDirectory);
             Thread.Sleep(1500);
 
             bool activated = ChromeWindowLocator.ActivateChromeWindow();
@@ -73,12 +75,17 @@ internal sealed class GeminiTaskRunner
         }
     }
 
-    private static void EnsureChromeIsOpen()
+    private static void EnsureChromeIsOpen(string chromeProfileDirectory)
     {
+        string profileDirectory = ChromeProfileStore.NormalizeSelectedProfile(chromeProfileDirectory);
+
         Process.Start(new ProcessStartInfo
         {
             FileName = "chrome.exe",
+            Arguments = $"--profile-directory=\"{profileDirectory.Replace("\"", "\\\"")}\"",
             UseShellExecute = true
         });
+
+        AppLog.Info($"Chrome launch requested for profile directory \"{profileDirectory}\".");
     }
 }

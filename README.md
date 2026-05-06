@@ -42,6 +42,7 @@ Right-click the tray icon to change settings:
 - `Create a Task`
 - `Enable/Disable Tasks`
 - `Configure Tasks`
+- `Chrome Profile [Experimental]`
 - `Settings`
 - `About`
 - `Exit`
@@ -64,6 +65,7 @@ Advanced settings can be changed in `settings.json`. The default configuration i
 {
   "StartWithWindows": false,
   "Theme": "Auto",
+  "ChromeProfileDirectory": "Default",
   "PollSeconds": 1.0,
   "DiagnosticLoggingEnabled": true,
   "MaxLogKilobytes": 256,
@@ -81,6 +83,7 @@ Scheduled tasks are stored in:
 Scheduled task behavior:
 
 - At the scheduled time, the app opens Chrome and uses the `Ask Gemini` button to open Gemini in Chrome's side panel.
+- Chrome is launched with the selected `Chrome Profile [Experimental]` profile directory. `Default` is used unless another detected Chrome profile is selected.
 - Chrome must be brought to the foreground while a scheduled task starts because the Gemini side panel is a Chrome UI surface, not a background API.
 - If `Run Immediately` is checked while saving a task, the app starts that task right away.
 - It applies the task's selected reasoning mode when the side panel exposes the mode picker.

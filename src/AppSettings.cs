@@ -9,6 +9,8 @@ internal sealed class AppSettings
 
     public ThemeMode Theme { get; set; } = AppSettingsDefaults.Theme;
 
+    public string ChromeProfileDirectory { get; set; } = AppSettingsDefaults.ChromeProfileDirectory;
+
     public double PollSeconds { get; set; } = AppSettingsDefaults.PollSeconds;
 
     public bool DiagnosticLoggingEnabled { get; set; } = AppSettingsDefaults.DiagnosticLoggingEnabled;
@@ -23,6 +25,7 @@ internal sealed class AppSettings
 internal static class AppSettingsDefaults
 {
     public const ThemeMode Theme = ThemeMode.Auto;
+    public const string ChromeProfileDirectory = "Default";
     public const bool DiagnosticLoggingEnabled = true;
     public const double PollSeconds = 1.0;
     public const int MaxLogKilobytes = 256;

@@ -16,10 +16,11 @@ internal sealed class TrayApplicationContext : ApplicationContext
         AppLog.Configure(settings);
         AppLog.Info($"{AppInfo.AppName} {AppInfo.Version} starting. Executable={AppInfo.ExecutablePath}");
         settings.StartWithWindows = ApprovalWatcher.IsStartWithWindowsEnabled();
+        settings.ChromeProfileDirectory = ChromeProfileStore.NormalizeSelectedProfile(settings.ChromeProfileDirectory);
         SettingsStore.Save(settings);
 
         watcher = new ApprovalWatcher(settings);
-        scheduler = new SchedulerService(new GeminiTaskRunner(watcher));
+        scheduler = new SchedulerService(new GeminiTaskRunner(watcher, settings));
         scheduler.StatusChanged += (_, status) => UpdateStatus(status);
         scheduler.NotificationRequested += (_, message) => ShowNotification(message);
 
@@ -68,6 +69,9 @@ internal sealed class TrayApplicationContext : ApplicationContext
         ToolStripMenuItem configureMenu = new("Configure Tasks");
         PopulateConfigureMenu(configureMenu);
 
+        ToolStripMenuItem chromeProfileMenu = new("Chrome Profile [Experimental]");
+        PopulateChromeProfileMenu(chromeProfileMenu);
+
         ToolStripMenuItem settingsItem = new("Settings");
         settingsItem.Click += (_, _) => ShowSettings();
 
@@ -83,6 +87,8 @@ internal sealed class TrayApplicationContext : ApplicationContext
         menu.Items.Add(createTaskItem);
         menu.Items.Add(enableDisableMenu);
         menu.Items.Add(configureMenu);
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(chromeProfileMenu);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(settingsItem);
         menu.Items.Add(aboutItem);
@@ -159,6 +165,47 @@ internal sealed class TrayApplicationContext : ApplicationContext
         }
     }
 
+    private void PopulateChromeProfileMenu(ToolStripMenuItem parent)
+    {
+        IReadOnlyList<ChromeProfileInfo> profiles = ChromeProfileStore.DetectProfiles();
+
+        if (profiles.Count == 0)
+        {
+            parent.DropDownItems.Add(new ToolStripMenuItem("None detected") { Enabled = false });
+            return;
+        }
+
+        string selectedProfile = ChromeProfileStore.NormalizeSelectedProfile(settings.ChromeProfileDirectory);
+        bool selectedProfileDetected = profiles.Any(profile => profile.DirectoryName.Equals(selectedProfile, StringComparison.OrdinalIgnoreCase));
+
+        foreach (ChromeProfileInfo profile in profiles)
+        {
+            ToolStripMenuItem item = new(profile.MenuLabel)
+            {
+                Checked = profile.DirectoryName.Equals(selectedProfile, StringComparison.OrdinalIgnoreCase)
+            };
+
+            item.Click += (_, _) =>
+            {
+                settings.ChromeProfileDirectory = profile.DirectoryName;
+                SettingsStore.Save(settings);
+                AppLog.Info($"Chrome profile set to \"{settings.ChromeProfileDirectory}\" from tray menu.");
+                RebuildMenu();
+            };
+
+            parent.DropDownItems.Add(item);
+        }
+
+        if (!selectedProfileDetected)
+        {
+            parent.DropDownItems.Add(new ToolStripSeparator());
+            parent.DropDownItems.Add(new ToolStripMenuItem($"Selected profile not detected: {selectedProfile}")
+            {
+                Enabled = false
+            });
+        }
+    }
+
     private void UpdateStatus(string status)
     {
         statusItem.Text = $"Status: {status}";
@@ -178,6 +225,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
             $"Scheduled tasks: {scheduler.Tasks.Count}\n" +
             $"Enabled tasks: {scheduler.Tasks.Count(task => task.Enabled)}\n" +
             $"Start with Windows: {YesNo(settings.StartWithWindows)}\n\n" +
+            $"Chrome profile: {settings.ChromeProfileDirectory}\n" +
             $"Current status: {scheduler.StatusText}";
 
         MessageBox.Show(message, AppInfo.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -236,7 +284,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         AppTheme.Apply(menu);
         AppLog.Configure(settings);
         watcher.ApplyInterval();
-        AppLog.Info($"Settings changed. StartWithWindows={settings.StartWithWindows}; Diagnostics={settings.DiagnosticLoggingEnabled}; Theme={settings.Theme}; MaxLogKB={settings.MaxLogKilobytes}; MaxLogFiles={settings.MaxLogFiles}; HeartbeatMinutes={settings.HeartbeatMinutes}; PollSeconds={settings.PollSeconds}.");
+        AppLog.Info($"Settings changed. StartWithWindows={settings.StartWithWindows}; Diagnostics={settings.DiagnosticLoggingEnabled}; Theme={settings.Theme}; ChromeProfile={settings.ChromeProfileDirectory}; MaxLogKB={settings.MaxLogKilobytes}; MaxLogFiles={settings.MaxLogFiles}; HeartbeatMinutes={settings.HeartbeatMinutes}; PollSeconds={settings.PollSeconds}.");
     }
 
     private void ShowNotification(string message)
