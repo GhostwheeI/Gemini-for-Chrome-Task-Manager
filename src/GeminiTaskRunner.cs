@@ -55,7 +55,9 @@ internal sealed class GeminiTaskRunner
 
             if (!promptFocused)
             {
-                AppLog.Info($"Scheduled task \"{task.Name}\" is falling back to current Chrome focus for prompt paste.");
+                task.LastResult = "Failed: Gemini prompt box not found";
+                AppLog.Info($"Scheduled task \"{task.Name}\" stopped before paste because the Chrome Gemini side panel prompt box was not focused. SidePanelOpened={sidePanelOpened}; ReasoningApplied={reasoningApplied}.");
+                return false;
             }
 
             Clipboard.SetText(task.Prompt);

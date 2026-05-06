@@ -31,15 +31,15 @@ internal sealed class ChromeGeminiSidePanelController : IDisposable
 
             AutomationElement? askGeminiButton = controls.FirstOrDefault(control =>
                 IsVisibleButtonLike(control) &&
-                GetName(control).Contains("Ask Gemini", StringComparison.OrdinalIgnoreCase));
+                IsOpenGeminiButtonName(GetName(control)));
 
             if (!TryInvokeOrClick(askGeminiButton))
             {
-                AppLog.Info("Chrome Gemini side panel Ask Gemini button was not found through UI Automation.");
+                AppLog.Info("Chrome Gemini side panel open button was not found through UI Automation.");
                 return false;
             }
 
-            AppLog.Info("Chrome Gemini side panel opened through Ask Gemini button.");
+            AppLog.Info($"Chrome Gemini side panel opened through \"{GetName(askGeminiButton!)}\" button.");
             return true;
         }
         catch (Exception exception)
@@ -106,43 +106,43 @@ internal sealed class ChromeGeminiSidePanelController : IDisposable
 
     public bool TryFocusPromptBox()
     {
-        if (!TryGetChromeWindow(preferSidePanel: true, out AutomationElement chromeWindow))
-        {
-            AppLog.Info("Prompt box was not focused because no Chrome window was available to UI Automation.");
-            return false;
-        }
+        DateTime deadline = DateTime.Now.AddSeconds(10);
 
-        try
+        while (DateTime.Now < deadline)
         {
-            AutomationElement[] controls = chromeWindow.FindAllDescendants();
-            AutomationElement? promptBox = FindPromptBox(controls);
-
-            if (promptBox is null)
+            if (!TryGetChromeWindow(preferSidePanel: true, out AutomationElement chromeWindow))
             {
-                AppLog.Info("Prompt box was not found in Chrome Gemini side panel.");
+                Thread.Sleep(300);
+                continue;
+            }
+
+            try
+            {
+                AutomationElement[] controls = chromeWindow.FindAllDescendants();
+                AutomationElement? promptBox = FindPromptBox(controls);
+
+                if (promptBox is null)
+                {
+                    Thread.Sleep(300);
+                    continue;
+                }
+
+                promptBox.Focus();
+                Thread.Sleep(150);
+                promptBox.Click();
+
+                AppLog.Info($"Prompt box focused in Chrome Gemini side panel. Bounds={FormatRectangle(promptBox.BoundingRectangle)}.");
+                return true;
+            }
+            catch (Exception exception)
+            {
+                AppLog.Error("Failed while focusing Chrome Gemini side panel prompt box through UI Automation.", exception);
                 return false;
             }
-
-            promptBox.Focus();
-            Thread.Sleep(150);
-
-            if (promptBox.BoundingRectangle is { IsEmpty: false } bounds)
-            {
-                promptBox.Click();
-                AppLog.Info($"Prompt box focused in Chrome Gemini side panel. Bounds={FormatRectangle(bounds)}.");
-            }
-            else
-            {
-                AppLog.Info("Prompt box focused in Chrome Gemini side panel.");
-            }
-
-            return true;
         }
-        catch (Exception exception)
-        {
-            AppLog.Error("Failed while focusing Chrome Gemini side panel prompt box through UI Automation.", exception);
-            return false;
-        }
+
+        AppLog.Info("Prompt box was not found in Chrome Gemini side panel before timeout.");
+        return false;
     }
 
     public void Dispose()
@@ -211,7 +211,7 @@ internal sealed class ChromeGeminiSidePanelController : IDisposable
         return IsSidePanelOpen(controls) ||
             controls.Any(control =>
                 IsVisibleButtonLike(control) &&
-                GetName(control).Contains("Ask Gemini", StringComparison.OrdinalIgnoreCase));
+                IsOpenGeminiButtonName(GetName(control)));
     }
 
     private AutomationElement? FindNamedControl(AutomationElement[] controls, string name)
@@ -237,14 +237,11 @@ internal sealed class ChromeGeminiSidePanelController : IDisposable
         ControlType controlType = control.ControlType;
         string name = GetName(control);
 
-        return (controlType == ControlType.Edit &&
+        return controlType == ControlType.Edit &&
             (name.Contains("Enter a prompt for Gemini", StringComparison.OrdinalIgnoreCase) ||
              name.Contains("Ask Gemini", StringComparison.OrdinalIgnoreCase) ||
              name.Contains("Ask anything", StringComparison.OrdinalIgnoreCase) ||
-             name.Contains("Prompt", StringComparison.OrdinalIgnoreCase))) ||
-            name.Contains("Ask Gemini", StringComparison.OrdinalIgnoreCase) ||
-            name.Contains("Ask anything", StringComparison.OrdinalIgnoreCase) ||
-            name.Contains("Prompt", StringComparison.OrdinalIgnoreCase);
+             name.Contains("Prompt", StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsVisibleButtonLike(AutomationElement control)
@@ -282,6 +279,12 @@ internal sealed class ChromeGeminiSidePanelController : IDisposable
         }
 
         return actualName.StartsWith(expectedWord + " ", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsOpenGeminiButtonName(string name)
+    {
+        return name.Contains("Ask Gemini", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("Open Gemini in Chrome", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryInvokeOrClick(AutomationElement? control)
