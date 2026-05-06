@@ -4,6 +4,7 @@ using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.Patterns;
 using FlaUI.UIA3;
+using System.Text;
 
 namespace GeminiForChromeManager;
 
@@ -145,6 +146,69 @@ internal sealed class ChromeGeminiSidePanelController : IDisposable
         return false;
     }
 
+    public GeminiTaskCompletionResult WaitForTaskCompletion(TimeSpan timeout, TimeSpan stableIdle)
+    {
+        DateTime deadline = DateTime.Now.Add(timeout);
+        DateTime? stableSince = null;
+        string previousSignature = string.Empty;
+
+        while (DateTime.Now < deadline)
+        {
+            if (!TryGetChromeWindow(preferSidePanel: true, out AutomationElement chromeWindow))
+            {
+                AppLog.Info("Gemini completion monitor no longer sees the Chrome Gemini side panel.");
+                return new GeminiTaskCompletionResult(GeminiTaskCompletionState.Interrupted, "Gemini side panel closed or unavailable");
+            }
+
+            AutomationElement[] controls = chromeWindow.FindAllDescendants();
+            string visibleText = BuildVisibleTextSignature(controls);
+
+            if (ContainsErrorSignal(visibleText))
+            {
+                AppLog.Info("Gemini completion monitor detected an error signal.");
+                return new GeminiTaskCompletionResult(GeminiTaskCompletionState.Error, "Gemini displayed an error or retry state");
+            }
+
+            if (ContainsInterruptedSignal(visibleText))
+            {
+                AppLog.Info("Gemini completion monitor detected an interrupted signal.");
+                return new GeminiTaskCompletionResult(GeminiTaskCompletionState.Interrupted, "Gemini displayed an interrupted or stopped state");
+            }
+
+            bool promptAvailable = FindPromptBox(controls) is not null;
+            bool activeRunControlVisible = ContainsActiveRunControl(controls);
+
+            if (promptAvailable && !activeRunControlVisible)
+            {
+                if (visibleText == previousSignature)
+                {
+                    stableSince ??= DateTime.Now;
+
+                    if (DateTime.Now - stableSince >= stableIdle)
+                    {
+                        AppLog.Info($"Gemini completion monitor reached stable idle. StableSeconds={stableIdle.TotalSeconds:F0}.");
+                        return new GeminiTaskCompletionResult(GeminiTaskCompletionState.Completed, "Gemini side panel returned to stable idle");
+                    }
+                }
+                else
+                {
+                    previousSignature = visibleText;
+                    stableSince = DateTime.Now;
+                }
+            }
+            else
+            {
+                stableSince = null;
+                previousSignature = visibleText;
+            }
+
+            Thread.Sleep(2000);
+        }
+
+        AppLog.Info($"Gemini completion monitor timed out after {timeout.TotalMinutes:F1} minutes.");
+        return new GeminiTaskCompletionResult(GeminiTaskCompletionState.TimedOut, "Timed out waiting for Gemini to become idle");
+    }
+
     public void Dispose()
     {
         automation.Dispose();
@@ -212,6 +276,65 @@ internal sealed class ChromeGeminiSidePanelController : IDisposable
             controls.Any(control =>
                 IsVisibleButtonLike(control) &&
                 IsOpenGeminiButtonName(GetName(control)));
+    }
+
+    public bool TryCloseSidePanel()
+    {
+        if (!TryGetChromeWindow(preferSidePanel: true, out AutomationElement chromeWindow))
+        {
+            AppLog.Info("Gemini side panel close skipped because no side panel window was found.");
+            return false;
+        }
+
+        AutomationElement[] controls = chromeWindow.FindAllDescendants();
+        AutomationElement? closeButton = controls.FirstOrDefault(control =>
+            IsVisibleButtonLike(control) &&
+            GetName(control).Contains("Close Gemini in Chrome", StringComparison.OrdinalIgnoreCase));
+
+        bool closed = TryInvokeOrClick(closeButton);
+        AppLog.Info($"Gemini side panel close attempted. Closed={closed}.");
+        return closed;
+    }
+
+    private static bool ContainsActiveRunControl(AutomationElement[] controls)
+    {
+        return controls.Any(control =>
+            IsVisibleButtonLike(control) &&
+            NameContainsAny(control, "Stop generating", "Stop", "Cancel", "Pause", "Interrupt"));
+    }
+
+    private static bool ContainsErrorSignal(string visibleText)
+    {
+        return visibleText.Contains("something went wrong", StringComparison.OrdinalIgnoreCase) ||
+            visibleText.Contains("try again", StringComparison.OrdinalIgnoreCase) ||
+            visibleText.Contains("couldn't complete", StringComparison.OrdinalIgnoreCase) ||
+            visibleText.Contains("unable to complete", StringComparison.OrdinalIgnoreCase) ||
+            visibleText.Contains("error", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ContainsInterruptedSignal(string visibleText)
+    {
+        return visibleText.Contains("interrupted", StringComparison.OrdinalIgnoreCase) ||
+            visibleText.Contains("stopped", StringComparison.OrdinalIgnoreCase) ||
+            visibleText.Contains("cancelled", StringComparison.OrdinalIgnoreCase) ||
+            visibleText.Contains("canceled", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string BuildVisibleTextSignature(AutomationElement[] controls)
+    {
+        StringBuilder builder = new();
+
+        foreach (AutomationElement control in controls.Where(IsVisible))
+        {
+            string name = GetName(control);
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                builder.AppendLine(name);
+            }
+        }
+
+        return builder.ToString();
     }
 
     private AutomationElement? FindNamedControl(AutomationElement[] controls, string name)

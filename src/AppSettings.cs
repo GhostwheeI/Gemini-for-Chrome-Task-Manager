@@ -20,6 +20,10 @@ internal sealed class AppSettings
     public int MaxLogFiles { get; set; } = AppSettingsDefaults.MaxLogFiles;
 
     public int HeartbeatMinutes { get; set; } = AppSettingsDefaults.HeartbeatMinutes;
+
+    public int TaskCompletionTimeoutMinutes { get; set; } = AppSettingsDefaults.TaskCompletionTimeoutMinutes;
+
+    public int TaskIdleStableSeconds { get; set; } = AppSettingsDefaults.TaskIdleStableSeconds;
 }
 
 internal static class AppSettingsDefaults
@@ -31,6 +35,8 @@ internal static class AppSettingsDefaults
     public const int MaxLogKilobytes = 256;
     public const int MaxLogFiles = 5;
     public const int HeartbeatMinutes = 1;
+    public const int TaskCompletionTimeoutMinutes = 60;
+    public const int TaskIdleStableSeconds = 20;
 }
 
 internal static class SettingsStore

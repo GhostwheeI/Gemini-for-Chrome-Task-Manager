@@ -70,7 +70,9 @@ Advanced settings can be changed in `settings.json`. The default configuration i
   "DiagnosticLoggingEnabled": true,
   "MaxLogKilobytes": 256,
   "MaxLogFiles": 5,
-  "HeartbeatMinutes": 1
+  "HeartbeatMinutes": 1,
+  "TaskCompletionTimeoutMinutes": 60,
+  "TaskIdleStableSeconds": 20
 }
 ```
 
@@ -90,7 +92,9 @@ Scheduled task behavior:
 - It copies the task prompt to the clipboard.
 - It attempts to paste and send the prompt in the Chrome Gemini side panel prompt box.
 - `Start Task` approvals are clicked automatically for that scheduled task while it starts.
-- The completion action runs when the scheduled task starts.
+- The app monitors the Gemini side panel for completion, error, interruption, or timeout signals.
+- When the task stops moving forward, the app closes the Gemini side panel and the dedicated Chrome task tab/window it opened.
+- The completion action runs after the task monitor finishes.
 
 Diagnostic logs are stored in:
 
