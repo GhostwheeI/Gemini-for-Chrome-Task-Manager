@@ -12,6 +12,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
     public TrayApplicationContext()
     {
         settings = SettingsStore.Load();
+        AppTheme.Configure(settings);
         AppLog.Configure(settings);
         AppLog.Info($"{AppInfo.AppName} {AppInfo.Version} starting. Executable={AppInfo.ExecutablePath}");
         settings.StartWithWindows = ApprovalWatcher.IsStartWithWindowsEnabled();
@@ -29,6 +30,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
         menu = BuildMenu();
         menu.Opening += (_, _) => RebuildMenu();
+        AppTheme.Apply(menu);
 
         notifyIcon = new NotifyIcon
         {
@@ -86,6 +88,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         menu.Items.Add(aboutItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(exitItem);
+        AppTheme.Apply(menu);
     }
 
     private void PopulateEnableDisableMenu(ToolStripMenuItem parent)
@@ -98,19 +101,46 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
         foreach (ScheduledGeminiTask task in scheduler.Tasks.OrderBy(task => task.Name))
         {
-            ToolStripMenuItem item = new(task.Name)
-            {
-                Checked = task.Enabled,
-                CheckOnClick = true
-            };
-            item.Click += (_, _) =>
-            {
-                task.Enabled = item.Checked;
-                scheduler.ReplaceTask(task);
-                AppLog.Info($"Task \"{task.Name}\" enabled set to {task.Enabled} from tray menu.");
-            };
-            parent.DropDownItems.Add(item);
+            parent.DropDownItems.Add(CreateTaskToggleHost(task));
         }
+    }
+
+    private ToolStripControlHost CreateTaskToggleHost(ScheduledGeminiTask task)
+    {
+        CheckBox checkBox = new()
+        {
+            AutoSize = true,
+            Checked = task.Enabled,
+            Enabled = CanToggleTask(task),
+            Padding = new Padding(4, 2, 8, 2),
+            Text = task.Name
+        };
+        AppTheme.ApplyMenuCheckBox(checkBox);
+
+        checkBox.CheckedChanged += (_, _) =>
+        {
+            if (!checkBox.Enabled)
+            {
+                return;
+            }
+
+            task.Enabled = checkBox.Checked;
+            scheduler.ReplaceTask(task);
+            AppLog.Info($"Task \"{task.Name}\" enabled set to {task.Enabled} from tray menu.");
+        };
+
+        return new ToolStripControlHost(checkBox)
+        {
+            Enabled = checkBox.Enabled,
+            AutoSize = true,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty
+        };
+    }
+
+    private static bool CanToggleTask(ScheduledGeminiTask task)
+    {
+        return !string.IsNullOrWhiteSpace(task.Id);
     }
 
     private void PopulateConfigureMenu(ToolStripMenuItem parent)
@@ -160,6 +190,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         ScheduledGeminiTask task = new();
 
         using TaskEditorForm editor = new(task);
+        AppTheme.Apply(editor);
 
         if (editor.ShowDialog() == DialogResult.OK)
         {
@@ -176,6 +207,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private void EditTask(ScheduledGeminiTask task)
     {
         using TaskEditorForm editor = new(task);
+        AppTheme.Apply(editor);
 
         if (editor.ShowDialog() == DialogResult.OK)
         {
@@ -200,9 +232,11 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
         ApprovalWatcher.SetStartWithWindows(settings.StartWithWindows);
         SettingsStore.Save(settings);
+        AppTheme.Configure(settings);
+        AppTheme.Apply(menu);
         AppLog.Configure(settings);
         watcher.ApplyInterval();
-        AppLog.Info($"Settings changed. StartWithWindows={settings.StartWithWindows}; Diagnostics={settings.DiagnosticLoggingEnabled}; MaxLogKB={settings.MaxLogKilobytes}; MaxLogFiles={settings.MaxLogFiles}; HeartbeatMinutes={settings.HeartbeatMinutes}; PollSeconds={settings.PollSeconds}.");
+        AppLog.Info($"Settings changed. StartWithWindows={settings.StartWithWindows}; Diagnostics={settings.DiagnosticLoggingEnabled}; Theme={settings.Theme}; MaxLogKB={settings.MaxLogKilobytes}; MaxLogFiles={settings.MaxLogFiles}; HeartbeatMinutes={settings.HeartbeatMinutes}; PollSeconds={settings.PollSeconds}.");
     }
 
     private void ShowNotification(string message)

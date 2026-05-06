@@ -5,6 +5,7 @@ internal sealed class SettingsForm : Form
     private readonly AppSettings settings;
     private readonly CheckBox startWithWindowsCheckBox = new();
     private readonly CheckBox diagnosticsCheckBox = new();
+    private readonly ComboBox themeComboBox = new();
 
     public SettingsForm(AppSettings settings)
     {
@@ -14,10 +15,11 @@ internal sealed class SettingsForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        ClientSize = new Size(430, 150);
+        ClientSize = new Size(430, 190);
 
         BuildLayout();
         LoadSettings();
+        AppTheme.Apply(this, AppTheme.Resolve(settings.Theme));
     }
 
     private void BuildLayout()
@@ -27,7 +29,7 @@ internal sealed class SettingsForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(12),
             ColumnCount = 2,
-            RowCount = 3
+            RowCount = 4
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190));
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -39,6 +41,14 @@ internal sealed class SettingsForm : Form
         AddLabel(root, "Diagnostic logging", 1);
         diagnosticsCheckBox.Text = "Enabled";
         root.Controls.Add(diagnosticsCheckBox, 1, 1);
+
+        AddLabel(root, "Theme", 2);
+        themeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        themeComboBox.Items.AddRange(["Auto", "Light", "Dark"]);
+        themeComboBox.Dock = DockStyle.Left;
+        themeComboBox.Width = 160;
+        themeComboBox.SelectedIndexChanged += (_, _) => AppTheme.Apply(this, AppTheme.Resolve(GetSelectedTheme()));
+        root.Controls.Add(themeComboBox, 1, 2);
 
         FlowLayoutPanel buttons = new()
         {
@@ -63,9 +73,9 @@ internal sealed class SettingsForm : Form
 
         buttons.Controls.Add(saveButton);
         buttons.Controls.Add(cancelButton);
-        root.Controls.Add(buttons, 1, 2);
+        root.Controls.Add(buttons, 1, 3);
 
-        for (int row = 0; row < 2; row++)
+        for (int row = 0; row < 3; row++)
         {
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
         }
@@ -92,11 +102,28 @@ internal sealed class SettingsForm : Form
     {
         startWithWindowsCheckBox.Checked = settings.StartWithWindows;
         diagnosticsCheckBox.Checked = settings.DiagnosticLoggingEnabled;
+        themeComboBox.SelectedIndex = settings.Theme switch
+        {
+            ThemeMode.Light => 1,
+            ThemeMode.Dark => 2,
+            _ => 0
+        };
     }
 
     private void SaveSettings()
     {
         settings.StartWithWindows = startWithWindowsCheckBox.Checked;
         settings.DiagnosticLoggingEnabled = diagnosticsCheckBox.Checked;
+        settings.Theme = GetSelectedTheme();
+    }
+
+    private ThemeMode GetSelectedTheme()
+    {
+        return themeComboBox.SelectedIndex switch
+        {
+            1 => ThemeMode.Light,
+            2 => ThemeMode.Dark,
+            _ => ThemeMode.Auto
+        };
     }
 }

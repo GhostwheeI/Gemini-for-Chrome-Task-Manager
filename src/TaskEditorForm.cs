@@ -29,6 +29,7 @@ internal sealed class TaskEditorForm : Form
         BuildLayout();
         LoadTask();
         ApplyScheduleState();
+        AppTheme.Apply(this);
     }
 
     public ScheduledGeminiTask ResultTask => task;

@@ -1,10 +1,13 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace GeminiForChromeManager;
 
 internal sealed class AppSettings
 {
     public bool StartWithWindows { get; set; }
+
+    public ThemeMode Theme { get; set; } = AppSettingsDefaults.Theme;
 
     public double PollSeconds { get; set; } = AppSettingsDefaults.PollSeconds;
 
@@ -19,6 +22,7 @@ internal sealed class AppSettings
 
 internal static class AppSettingsDefaults
 {
+    public const ThemeMode Theme = ThemeMode.Auto;
     public const bool DiagnosticLoggingEnabled = true;
     public const double PollSeconds = 1.0;
     public const int MaxLogKilobytes = 256;
@@ -32,6 +36,11 @@ internal static class SettingsStore
     {
         WriteIndented = true
     };
+
+    static SettingsStore()
+    {
+        JsonOptions.Converters.Add(new JsonStringEnumConverter());
+    }
 
     public static string SettingsDirectory =>
         Path.Combine(

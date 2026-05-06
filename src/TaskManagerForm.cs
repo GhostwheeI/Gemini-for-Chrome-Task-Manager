@@ -15,6 +15,7 @@ internal sealed class TaskManagerForm : Form
 
         BuildLayout();
         RefreshGrid();
+        AppTheme.Apply(this);
     }
 
     private ScheduledGeminiTask? SelectedTask =>

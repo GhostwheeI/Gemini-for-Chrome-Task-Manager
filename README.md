@@ -56,12 +56,14 @@ The Settings window intentionally exposes only:
 
 - `Start with Windows`
 - `Diagnostic Logging`
+- `Theme`
 
 Advanced settings can be changed in `settings.json`. The default configuration is:
 
 ```json
 {
   "StartWithWindows": false,
+  "Theme": "Auto",
   "PollSeconds": 1.0,
   "DiagnosticLoggingEnabled": true,
   "MaxLogKilobytes": 256,
