@@ -82,7 +82,7 @@ internal sealed class TaskManagerForm : Form
             .ToList();
     }
 
-    private void AddTask()
+    private async void AddTask()
     {
         ScheduledGeminiTask task = new();
 
@@ -95,14 +95,14 @@ internal sealed class TaskManagerForm : Form
 
             if (editor.RunImmediately)
             {
-                scheduler.RunNow(savedTask);
+                await scheduler.RunNowAsync(savedTask);
             }
 
             RefreshGrid();
         }
     }
 
-    private void EditSelectedTask()
+    private async void EditSelectedTask()
     {
         ScheduledGeminiTask? selected = SelectedTask;
 
@@ -120,7 +120,7 @@ internal sealed class TaskManagerForm : Form
 
             if (editor.RunImmediately)
             {
-                scheduler.RunNow(savedTask);
+                await scheduler.RunNowAsync(savedTask);
             }
 
             RefreshGrid();
@@ -149,7 +149,7 @@ internal sealed class TaskManagerForm : Form
         }
     }
 
-    private void RunSelectedTaskNow()
+    private async void RunSelectedTaskNow()
     {
         ScheduledGeminiTask? selected = SelectedTask;
 
@@ -158,7 +158,7 @@ internal sealed class TaskManagerForm : Form
             return;
         }
 
-        scheduler.RunNow(selected);
+        await scheduler.RunNowAsync(selected);
         RefreshGrid();
     }
 }

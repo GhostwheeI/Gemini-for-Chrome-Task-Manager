@@ -146,7 +146,7 @@ internal sealed class ChromeGeminiSidePanelController : IDisposable
         return false;
     }
 
-    public GeminiTaskCompletionResult WaitForTaskCompletion(TimeSpan timeout, TimeSpan stableIdle)
+    public async Task<GeminiTaskCompletionResult> WaitForTaskCompletionAsync(TimeSpan timeout, TimeSpan stableIdle)
     {
         DateTime deadline = DateTime.Now.Add(timeout);
         DateTime? stableSince = null;
@@ -202,7 +202,7 @@ internal sealed class ChromeGeminiSidePanelController : IDisposable
                 previousSignature = visibleText;
             }
 
-            Thread.Sleep(2000);
+            await Task.Delay(2000);
         }
 
         AppLog.Info($"Gemini completion monitor timed out after {timeout.TotalMinutes:F1} minutes.");
