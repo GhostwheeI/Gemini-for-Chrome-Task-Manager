@@ -253,7 +253,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
     private static string YesNo(bool value) => value ? "Yes" : "No";
 
-    private void CreateTask()
+    private async void CreateTask()
     {
         ScheduledGeminiTask task = new();
 
@@ -267,12 +267,12 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
             if (editor.RunImmediately)
             {
-                scheduler.RunNow(savedTask);
+                await scheduler.RunNowAsync(savedTask);
             }
         }
     }
 
-    private void EditTask(ScheduledGeminiTask task)
+    private async void EditTask(ScheduledGeminiTask task)
     {
         using TaskEditorForm editor = new(task);
         AppTheme.Apply(editor);
@@ -284,7 +284,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
             if (editor.RunImmediately)
             {
-                scheduler.RunNow(savedTask);
+                await scheduler.RunNowAsync(savedTask);
             }
         }
     }

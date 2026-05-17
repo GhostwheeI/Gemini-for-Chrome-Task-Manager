@@ -24,7 +24,7 @@ internal sealed class ChromeTaskSession
         return new ChromeTaskSession(processIds);
     }
 
-    public void Cleanup()
+    public async Task CleanupAsync()
     {
         if (!hadChromeBeforeRun)
         {
@@ -32,7 +32,7 @@ internal sealed class ChromeTaskSession
             return;
         }
 
-        CloseActiveTaskTab();
+        await CloseActiveTaskTabAsync();
     }
 
     private void CloseChromeProcessesStartedForTask()
@@ -64,7 +64,7 @@ internal sealed class ChromeTaskSession
         AppLog.Info($"Chrome cleanup closed task-created Chrome windows. Count={closedCount}.");
     }
 
-    private static void CloseActiveTaskTab()
+    private static async Task CloseActiveTaskTabAsync()
     {
         if (!ChromeWindowLocator.ActivateChromeWindow())
         {
@@ -72,7 +72,7 @@ internal sealed class ChromeTaskSession
             return;
         }
 
-        Thread.Sleep(250);
+        await Task.Delay(250);
         SendKeys.SendWait("^w");
         AppLog.Info("Chrome cleanup requested active task tab close with Ctrl+W.");
     }

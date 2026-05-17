@@ -69,13 +69,13 @@ internal sealed class SchedulerService : IDisposable
         SaveTasks();
     }
 
-    public void RunNow(ScheduledGeminiTask task)
+    public async Task RunNowAsync(ScheduledGeminiTask task)
     {
-        RunTask(task, DateTime.Now, manualRun: true);
+        await RunTaskAsync(task, DateTime.Now, manualRun: true);
         SaveTasks();
     }
 
-    private void RunDueWork()
+    private async void RunDueWork()
     {
         if (isRunningDueTasks)
         {
@@ -90,7 +90,7 @@ internal sealed class SchedulerService : IDisposable
 
             foreach (ScheduledGeminiTask task in tasks.Where(task => task.Enabled && task.NextRunLocal <= nowLocal).ToList())
             {
-                RunTask(task, nowLocal, manualRun: false);
+                await RunTaskAsync(task, nowLocal, manualRun: false);
             }
 
             ScheduledTaskStore.Save(tasks);
@@ -101,13 +101,13 @@ internal sealed class SchedulerService : IDisposable
         }
     }
 
-    private void RunTask(ScheduledGeminiTask task, DateTime nowLocal, bool manualRun)
+    private async Task RunTaskAsync(ScheduledGeminiTask task, DateTime nowLocal, bool manualRun)
     {
         SetStatus($"Running scheduled task: {task.Name}");
         AppLog.Info($"Scheduler triggering task \"{task.Name}\". ManualRun={manualRun}; NextRunLocal={task.NextRunLocal:g}.");
 
         DateTime startedLocal = DateTime.Now;
-        GeminiTaskRunResult result = runner.Run(task);
+        GeminiTaskRunResult result = await runner.RunAsync(task);
         DateTime endedLocal = DateTime.Now;
         task.AdvanceAfterRun(nowLocal);
         task.LastResult = result.Result;
